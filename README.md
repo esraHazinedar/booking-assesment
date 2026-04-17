@@ -5,6 +5,15 @@ The application is deployed and accessible here:
 
 👉 https://chic-gelato-36f66f.netlify.app/
 
+ Project Structure
+
+- page-objects/ → Page Object Models for UI interactions
+- tests/automation/ → Playwright test cases
+- ui/ → UI components and resources
+- evidence/ → test execution evidence (screenshots, outputs)
+- manual-tests.md → manual test cases
+- bug-reports.md → reported issues
+  
  Overview
 
 This project is a Playwright-based end-to-end (E2E) automation framework designed to test a skip booking application.
