@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Booking System</title>
+
+  <style>
+    body { font-family: Arial; padding: 20px; }
+
+    #stepper { display: flex; gap: 10px; margin-bottom: 20px; }
+
+    .step {
+      padding: 8px 12px;
+      border-radius: 20px;
+      background: #eee;
+      font-size: 12px;
+    }
+
+    .step.active { background: #4caf50; color: white; }
+
+    .address-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 5px 0;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .address-card.selected {
+      border: 2px solid green;
+      background: #d3f9d8;
+    }
+
+    .skip-box {
+      display: inline-block;
+      width: 140px;
+      padding: 12px;
+      margin: 8px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .skip-box.selected {
+      border: 2px solid #2e7d32;
+      background: #e8f5e9;
+    }
+
+    .skip-box.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      background: #f5f5f5;
+      border: 1px dashed #999;
+    }
+
+    .review-box {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Booking System</h1>
+
+<div id="stepper">
+  <div class="step active">1. Postcode</div>
+  <div class="step">2. Waste</div>
+  <div class="step">3. Skip</div>
+  <div class="step">4. Review</div>
+</div>
+
+<h2>Postcode</h2>
+<input id="postcode" placeholder="Enter postcode" />
+<button id="searchBtn">Search</button>
+
+<div id="addresses"></div>
+
+<hr/>
+
+<h2>Waste Type</h2>
+<button onclick="selectWaste('General')">General</button>
+<button onclick="selectWaste('Heavy')">Heavy</button>
+<button onclick="selectWaste('Plasterboard')">Plasterboard</button>
+
+<div id="plasterOptions" style="display:none; margin-top:10px;">
+  <h3>Plasterboard Options</h3>
+  <button onclick="selectPlaster('Small')">Small</button>
+  <button onclick="selectPlaster('Medium')">Medium</button>
+  <button onclick="selectPlaster('Large')">Large</button>
+</div>
+
+<div id="plasterStatus"></div>
+
+<hr/>
+
+<h2>Skips</h2>
+<div id="skips"></div>
+
+<hr/>
+
+<h2>Review</h2>
+<div id="review"></div>
+
+<button id="confirmBtn">Confirm Booking</button>
+
+<script type="module">
+import { bookingApi } from "./bookingApi.js";
+
+console.log("API loaded:", bookingApi);
+
+/* STATE */
+let selectedAddress = null;
+let selectedWaste = null;
+let selectedSkip = null;
+let plasterOption = null;
+let isSubmitted = false;
+
+/* SEARCH */
+document.getElementById("searchBtn").addEventListener("click", async () => {
+  const postcode = document.getElementById("postcode").value.trim().toUpperCase();
+  const container = document.getElementById("addresses");
+
+  container.innerHTML = "";
+
+  try {
+    const result = await bookingApi.postcode.lookup(postcode);
+
+    if (!result.addresses.length) {
+      container.innerHTML = "<p>No addresses found</p>";
+      return;
+    }
+
+    result.addresses.forEach((addr) => {
+      const card = document.createElement("div");
+      card.className = "address-card";
+      card.innerText = `${addr.line1}, ${addr.city}`;
+
+      card.onclick = () => {
+        selectedAddress = addr;
+
+        document.querySelectorAll(".address-card")
+          .forEach(c => c.classList.remove("selected"));
+
+        card.classList.add("selected");
+
+        updateReview();
+      };
+
+      container.appendChild(card);
+    });
+
+  } catch (e) {
+    container.innerHTML = "<p>Error fetching addresses</p>";
+  }
+});
+
+/* RULE ENGINE */
+function getSkipsByPlaster(option) {
+  const baseSkips = [
+    { size: "4-yard", price: 120 },
+    { size: "6-yard", price: 150 },
+    { size: "8-yard", price: 180 },
+    { size: "10-yard", price: 210 },
+    { size: "12-yard", price: 240 },
+    { size: "14-yard", price: 270 },
+    { size: "16-yard", price: 300 },
+    { size: "20-yard", price: 350 }
+  ];
+
+  if (!option) return baseSkips;
+
+  return baseSkips.map(skip => {
+    if (option === "Medium") return { ...skip, price: skip.price + 10 };
+    if (option === "Large") return { ...skip, price: skip.price + 20 };
+    return skip;
+  });
+}
+
+/* WASTE */
+function selectWaste(type) {
+  selectedWaste = type;
+  selectedSkip = null;
+  plasterOption = null;
+
+  if (type === "Plasterboard") {
+    document.getElementById("plasterOptions").style.display = "block";
+    document.getElementById("skips").innerHTML = "";
+    updateReview();
+    return;
+  }
+
+  document.getElementById("plasterOptions").style.display = "none";
+  renderSkips();
+  updateReview();
+}
+window.selectWaste = selectWaste;
+
+/* PLASTER */
+function selectPlaster(option) {
+  plasterOption = option;
+  document.getElementById("plasterStatus").innerText =
+    `Selected Plaster: ${option}`;
+
+  renderSkips();
+  updateReview();
+}
+window.selectPlaster = selectPlaster;
+
+/* SKIPS */
+function renderSkips() {
+  const container = document.getElementById("skips");
+  container.innerHTML = "";
+
+  const skips = getSkipsByPlaster(plasterOption);
+
+  skips.forEach(skip => {
+    const box = document.createElement("div");
+    box.className = "skip-box";
+
+    if (selectedWaste === "Heavy" &&
+      (skip.size === "12-yard" || skip.size === "14-yard")) {
+      box.classList.add("disabled");
+    }
+
+    box.innerHTML = `<b>${skip.size}</b><br>£${skip.price}`;
+
+    box.onclick = () => {
+      if (box.classList.contains("disabled")) return;
+
+      selectedSkip = skip;
+
+      document.querySelectorAll(".skip-box")
+        .forEach(b => b.classList.remove("selected"));
+
+      box.classList.add("selected");
+
+      updateReview();
+    };
+
+    container.appendChild(box);
+  });
+}
+
+/* REVIEW */
+function updateReview() {
+  document.getElementById("review").innerHTML = `
+    <div class="review-box">
+      <p><b>Postcode:</b> ${document.getElementById("postcode").value || "-"}</p>
+      <p><b>Address:</b> ${
+        selectedAddress ? `${selectedAddress.line1}, ${selectedAddress.city}` : "-"
+      }</p>
+      <p><b>Waste:</b> ${selectedWaste || "-"}</p>
+
+      ${
+        selectedWaste === "Plasterboard" && plasterOption
+          ? `<p><b>Plaster Option:</b> ${plasterOption}</p>`
+          : ""
+      }
+
+      <p><b>Skip:</b> ${selectedSkip?.size || "-"}</p>
+      <p><b>Price:</b> £${selectedSkip?.price || 0}</p>
+    </div>
+  `;
+}
+
+/* CONFIRM */
+document.getElementById("confirmBtn").addEventListener("click", async () => {
+
+  console.log("CONFIRM CLICKED");
+
+  if (isSubmitted) return;
+
+  if (!selectedAddress || !selectedWaste || !selectedSkip) {
+    alert("Please complete all steps");
+    return;
+  }
+
+  try {
+    const res = await bookingApi.booking.confirm({
+      postcode: document.getElementById("postcode").value.trim().toUpperCase(),
+      addressId: selectedAddress.id,
+      heavyWaste: selectedWaste === "Heavy",
+      plasterboard: selectedWaste === "Plasterboard",
+      plasterOption,
+      skipSize: selectedSkip.size,
+      price: selectedSkip.price
+    });
+
+    isSubmitted = true;
+    document.getElementById("confirmBtn").disabled = true;
+
+    alert(`Booking Confirmed! ID: ${res.bookingId}`);
+
+  } catch (e) {
+    console.error(e);
+    alert("Booking failed");
+  }
+});
+
+</script>
+
+</body>
+</html>
