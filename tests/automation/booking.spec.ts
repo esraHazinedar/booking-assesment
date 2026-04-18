@@ -51,7 +51,7 @@ test('TC-02 — Full booking flow (Heavy)', async ({ bookingPage, page }) => {
   await expect(twelve).toHaveClass(/disabled/);
   await expect(fourteen).toHaveClass(/disabled/);
 
-  //  they are NOT clickable (strong QA assertion)
+  //  they are NOT clickable 
   await expect(twelve).toHaveCSS('pointer-events', 'none');
   await expect(fourteen).toHaveCSS('pointer-events', 'none');
 
