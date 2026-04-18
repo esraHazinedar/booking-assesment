@@ -40,3 +40,7 @@
 | TC-38 | Invalid plaster state           | When plaster selected without waste                     | No change applied                   | Negative    |
 | TC-39 | Very long postcode input        | When user enters long string                            | Input handled safely                | Edge        |
 | TC-40 | Rapid waste switching           | When user switches waste types fast                     | UI remains stable                   | Edge        |
+| TC-41 | Address API failure             | Given address API fails                                 | Error message shown, no selection   | API Failure |
+| TC-42 | Pricing API failure             | Given pricing API fails when skip selected              | Price not displayed, error shown    | API Failure |
+| TC-43 | Booking API failure             | Given booking API fails on confirm                      | Error shown, booking not completed  | API Failure |
+| TC-44 | Retry booking after failure     | When user retries booking after API failure             | Booking succeeds                    | State       |
