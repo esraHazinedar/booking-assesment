@@ -1,6 +1,6 @@
 | ID    | Scenario                        | Steps (Gherkin)                                         | Expected Result                     | Type        |
 | ----- | ------------------------------- | ------------------------------------------------------- | ----------------------------------- | ----------- |
-| TC-01 | Open application                | Given user opens `http://localhost:52330/ui/index.html` | Booking system page is displayed    | Positive    |
+| TC-01 | Open application                | Given user opens`https://chic-gelato-36f66f.netlify.app/`| Booking system page is displayed   | Positive    |
 | TC-02 | Complete booking (General)      | Given user completes full booking with General waste    | Booking is confirmed                | Positive    |
 | TC-03 | Complete booking (Heavy)        | Given Heavy waste and valid skip selected               | Booking succeeds with rules applied | Positive    |
 | TC-04 | Complete booking (Plasterboard) | Given Plasterboard + Medium option selected             | Price updates correctly             | Positive    |
